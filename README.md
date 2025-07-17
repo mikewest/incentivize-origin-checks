@@ -58,6 +58,8 @@ That's it. This will force developers to touch the `origin` attribute before doi
 
 That's not a question, but yes. It would. That means it's a deprecation we'd need to ramp up to, with some stepping stones along the way involving devtools messages, documentation updates, etc. We could likely also find non-destructive ways of creating incentives for developers: for example, we could simply slow down the `data` getter if `origin` hasn't been accessed. \~500ms delays would get developers' attention without overly burdening users.
 
+We can also take steps to reduce the scope of impact. Perhaps we can skip the check if the event is same-origin with the receiving document? Same-site?
+
 ### **What's a reasonable pattern we should encourage developers to use?**
 
 In the best case, developers can allowlist certain origins, just as they do for `postMessage()` today. The `URLPattern` API can be helpful here:
