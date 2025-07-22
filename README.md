@@ -14,6 +14,37 @@ It would be ideal to change the API's shape somewhat dramatically in order to en
 
 ## **A Proposal**
 
+Several suggestions that dovetail together:
+
+### Filtered Events
+
+We could create more-specific events on `Window` for same-origin, same-site, and cross-site messages: registering a handler for `message-same-origin` makes the developer intent clear, and allows us to filter out messages from cross-origin senders. Likewise, `message-same-site` events allow developers to ignore messages from cross-site senders entirely, focusing on those their own site has sent. `message-cross-site` events would be an alias for `message`, with status quo behavior. This approach would allow us to guide developers towards safer options depending on their actual needs, and would act as a low-cost, drop-in replacement for the existing `message` event.
+
+```javascript
+window.addEventListener('message-same-origin', e => {
+  // Safely proceed without doing any `origin` checks!
+});
+```
+
+
+### Filtered Registration
+
+We could create a more granular filtering mechanism for incoming events that would allow developers to decide at registration time what set of origins they're interested in hearing from. This could be spelled in a number of ways, ranging from a new member in the `options` dictionary passed into `addEventListener` through to a new method on `Window` (or `MessageEvent`?) that accepted filtering parameters. It probably makes sense to reuse a subset of `URLPattern` (or create a new `OriginPattern` that only exposes that subset) for this filter, but a variety of spellings might make sense. The salient change would be that origin checks are a mandatory part of the registration step, and that the browser becomes responsible for the filtering, rather than relying on the possibly-generic event handler code.
+
+```javascript
+const handler = e => {
+  // Safely proceed without doing any `origin` checks!
+};
+const originAllowList = [
+  new URLPattern({ protocol: 'https', hostname: '*.example.site' }),
+  new URLPattern({ protocol: 'https', hostname: 'specific-subdomain.other.site' }),
+];
+window.addMessageEventListenerWithOriginFilters(handler, originAllowList);
+```
+
+
+### Deny access to `data` before `origin` is accessed
+
 When handling messages delivered via `Window.postMessage()`, we should force developers to do some kind of check against the `MessageEvent.origin` attribute before allowing them to access the contents of `MessageEvent.data`. We can't exactly ensure that developers perform a robust check that meets the requirements of their use case, but we can at least require them to *look* at the `origin` attribute by hiding the `data` attribute's value until they do. That is:
 
 ```javascript
@@ -54,7 +85,7 @@ That's it. This will force developers to touch the `origin` attribute before doi
 
 ## **FAQ**
 
-### **Surely this would break pages.**
+### **Surely forcing `origin` accesses prior to `data` availability would break pages.**
 
 That's not a question, but yes. It would. That means it's a deprecation we'd need to ramp up to, with some stepping stones along the way involving devtools messages, documentation updates, etc. We could likely also find non-destructive ways of creating incentives for developers: for example, we could simply slow down the `data` getter if `origin` hasn't been accessed. \~500ms delays would get developers' attention without overly burdening users.
 
@@ -62,7 +93,11 @@ We can also take steps to reduce the scope of impact. Perhaps we can skip the ch
 
 ### **What's a reasonable pattern we should encourage developers to use?**
 
-In the best case, developers can allowlist certain origins, just as they do for `postMessage()` today. The `URLPattern` API can be helpful here:
+Of course, we should introduce the proposals above, and push developers towards those. That means that in the simplest case, developers can subscribe to `message-same-origin` and ignore the rest of this document.
+
+In cases where developers need to subscribe to messages delivered by untrusted parties, they should allowlist certain origins just as they (should) do for `postMessage()` today. If we introduce the proposals above, great!
+
+But even in the status quo, the `URLPattern` API can be helpful:
 
 ```javascript
 function isReasonableOrigin(origin) {
