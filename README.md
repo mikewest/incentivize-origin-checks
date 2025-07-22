@@ -28,14 +28,16 @@ window.addEventListener('message-same-origin', e => {
 
 The specification for this would boil down to a change to step 8.7 of the [window post message steps](https://html.spec.whatwg.org/multipage/web-messaging.html#window-post-message-steps) which adjusted the message name based on the relationship between the sender and recipient origin, a la:
 
-> 7. Let _messageName_ be the value associated with the first matching statement below:
+> 7. Let _eventName_ be the value associated with the first matching statement below:
 >
->    * _incumbentSettings_'s `origin` is [same-origin](https://html.spec.whatwg.org/multipage/browsers.html#same-origin) with _targetWindow_'s `relevant settings object`'s `origin`.
+>    * _incumbentSettings_'s `origin` is [same-origin](https://html.spec.whatwg.org/multipage/browsers.html#same-origin) with _targetWindow_'s `relevant settings object`'s `origin`:
 >        * `message-same-origin`
->    *  Yay!
->        * Boo!
+>    *  _incumbentSettings_'s `origin` is [same-site](https://html.spec.whatwg.org/multipage/browsers.html#same-site) with _targetWindow_'s `relevant settings object`'s `origin`
+>        * `message-same-site`
 >    *  Otherwise:
->        * `message-cross-site`   
+>        * `message-cross-site`  
+>
+> 8. Fire an event named _eventName_ at targetWindow, ...
 
 
 ### Filtered Registration
@@ -90,7 +92,7 @@ This would require three small changes to `MessageEvent`, and one small change t
    2. Return the value of the `origin` attribute.
 
 4. We'll change step 8.7 of the [window post message steps](https://html.spec.whatwg.org/multipage/web-messaging.html#window-post-message-steps) to include the following addition:  
-   1. [Fire an event](https://dom.spec.whatwg.org/#concept-event-fire) named [message](https://html.spec.whatwg.org/multipage/indices.html#event-message) at `targetWindow`, using [MessageEvent](https://html.spec.whatwg.org/multipage/comms.html#messageevent), with the [origin](https://html.spec.whatwg.org/multipage/comms.html#dom-messageevent-origin) attribute initialized to `origin`, the [source](https://html.spec.whatwg.org/multipage/comms.html#dom-messageevent-source) attribute initialized to `source`, the [data](https://html.spec.whatwg.org/multipage/comms.html#dom-messageevent-data) attribute initialized to `messageClone`<ins>**, the `[[Origin Check Required]]` slot initialized to `true`**</ins>, and the [ports](https://html.spec.whatwg.org/multipage/comms.html#dom-messageevent-ports) attribute initialized to `newPorts`.
+   > 7. [Fire an event](https://dom.spec.whatwg.org/#concept-event-fire) named [message](https://html.spec.whatwg.org/multipage/indices.html#event-message) at `targetWindow`, using [MessageEvent](https://html.spec.whatwg.org/multipage/comms.html#messageevent), with the [origin](https://html.spec.whatwg.org/multipage/comms.html#dom-messageevent-origin) attribute initialized to `origin`, the [source](https://html.spec.whatwg.org/multipage/comms.html#dom-messageevent-source) attribute initialized to `source`, the [data](https://html.spec.whatwg.org/multipage/comms.html#dom-messageevent-data) attribute initialized to `messageClone`<ins>**, the `[[Origin Check Required]]` slot initialized to `true`**</ins>, and the [ports](https://html.spec.whatwg.org/multipage/comms.html#dom-messageevent-ports) attribute initialized to `newPorts`.
 
 That's it. This will force developers to touch the `origin` attribute before doing something useful with the `data` attribute. It's a speedbump, but with documentation and good devtools messaging, it's one that might improve the quality of existing API usage.
 
