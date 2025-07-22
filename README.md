@@ -26,6 +26,17 @@ window.addEventListener('message-same-origin', e => {
 });
 ```
 
+The specification for this would boil down to a change to step 8.7 of the [window post message steps](https://html.spec.whatwg.org/multipage/web-messaging.html#window-post-message-steps) which adjusted the message name based on the relationship between the sender and recipient origin, a la:
+
+> 7. Let _messageName_ be the value associated with the first matching statement below:
+>
+>    * _incumbentSettings_'s `origin` is [same-origin](https://html.spec.whatwg.org/multipage/browsers.html#same-origin) with _targetWindow_'s `relevant settings object`'s `origin`.
+>        * `message-same-origin`
+>    *  Yay!
+>        * Boo!
+>    *  Otherwise:
+>        * `message-cross-site`   
+
 
 ### Filtered Registration
 
